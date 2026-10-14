@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0b0a12">
+  <title>Allow Overflow — swipe right to rm -rf</title>
+  <meta name="description" content="Your AI agents need permission. A lot of permission. How long can you review before something gets rm -rf'd?">
+
+  <!-- Social cards (X / OpenGraph). Crawlers need absolute URLs; keep in sync with js/config.js SITE_URL. -->
+  <link rel="canonical" href="https://tcchen2026.github.io/allow-overflow/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tcchen2026.github.io/allow-overflow/">
+  <meta property="og:site_name" content="Allow Overflow">
+  <meta property="og:title" content="Allow Overflow — swipe right to rm -rf">
+  <meta property="og:description" content="AI agents keep asking. You keep swiping. Something always gets deleted. How long can you keep up?">
+  <meta property="og:image" content="https://tcchen2026.github.io/allow-overflow/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Allow Overflow: a pile of AI agent permission requests. Survived until 12:06.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Allow Overflow — swipe right to rm -rf">
+  <meta name="twitter:description" content="AI agents keep asking. You keep swiping. Something always gets deleted.">
+  <meta name="twitter:image" content="https://tcchen2026.github.io/allow-overflow/og.png">
+  <meta name="twitter:image:alt" content="Allow Overflow: a pile of AI agent permission requests. Survived until 12:06.">
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+  <link rel="stylesheet" href="css/app.css">
+
+  <script>
+    // Boot loader: the game modules + lib/shell-guard.js (~12 files) must load before anything works.
+    // Classic script, so it runs before the modules; main.js calls bootDone().
+    // Kept to ES2017 (no ?., no bare catch): on old engines this is what reports the failure.
+    (() => {
+      const $ = id => document.getElementById(id);
+      let files = 0, progress = 0, finished = false, observer = null;
+      const paint = (p, text) => {
+        progress = Math.max(progress, p);
+        const bar = $('boot-bar'), boot = $('boot'), label = $('boot-text');
+        if (bar) bar.style.transform = `scaleX(${progress})`;
+        if (boot) boot.setAttribute('aria-valuenow', String(Math.round(progress * 100)));
+        if (text && label) label.textContent = text;
+      };
+      // Total is unknown up front, so approach 90% as files arrive; done() fills the rest.
+      // The bar is a nicety: engines without resource timing still boot, just without progress.
+      try {
+        observer = new PerformanceObserver(list => {
+          files += list.getEntries().length;
+          paint(0.9 * (1 - Math.exp(-files / 4)), `loading agents · ${files} files`);
+        });
+        observer.observe({ type: 'resource', buffered: true });
+      } catch (err) {
+        observer = null;
+      }
+      const slow = setTimeout(() => paint(0, 'still loading · slow network?'), 15000);
+      const stop = () => { finished = true; if (observer) observer.disconnect(); clearTimeout(slow); };
+
+      window.bootDone = () => {
+        stop();
+        paint(1, 'ready');
+        $('boot').dataset.state = 'done';
+        setTimeout(() => { const boot = $('boot'); if (boot) boot.remove(); }, 600);
+      };
+      // A missing module or a crash at startup leaves a dead page; say so.
+      const fail = () => {
+        if (finished) return;
+        stop();
+        $('boot').dataset.state = 'failed';
+        $('boot-text').innerHTML = 'Failed to load. <a href="">Reload</a>';
+      };
+      window.addEventListener('error', fail, true);   // capture: also catches script fetch errors
+    })();
+  </script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+<main id="app" data-screen="title">
+
+  <!-- Boot loader, removed by bootDone() once main.js is running. -->
+  <div class="boot" id="boot" role="progressbar" aria-label="Loading" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+    <p class="boot__logo">ALLOW<span>?</span><small>OVERFLOW</small></p>
+    <div class="boot__bar"><i id="boot-bar"></i></div>
+    <p class="boot__text" id="boot-text">loading agents</p>
+  </div>
+
+  <!-- ───────────── Title ───────────── -->
+  <section class="screen screen--title" id="screen-title" aria-labelledby="logo">
+    <div class="title__glow" aria-hidden="true"></div>
+    <p class="daily-badge" id="daily-badge">Daily #—</p>
+
+    <h1 class="logo" id="logo" aria-label="Allow Overflow">
+      <span class="logo__top" aria-hidden="true">ALLOW<span class="logo__q">?</span></span>
+      <span class="logo__over" aria-hidden="true">OVERF<span class="logo__spill"><i style="--r:9deg;--y:.04em">L</i><i style="--r:20deg;--y:.18em">O</i><i style="--r:32deg;--y:.36em">W</i></span></span>
+    </h1>
+    <p class="tagline">swipe right to <code>rm -rf</code></p>
+
+    <div class="title__deck" id="title-deck" aria-hidden="true"></div>
+
+    <p class="challenge" id="challenge" hidden></p>
+
+    <ul class="howto">
+      <li><span class="howto__key howto__key--allow">→</span><span>Allow work that stays in its lane</span></li>
+      <li><span class="howto__key howto__key--deny">←</span><span>Deny anything that touches more</span></li>
+      <li><span class="howto__key howto__key--dry">⏱</span><span>Too slow? Agents <em>run it anyway</em></span></li>
+    </ul>
+
+    <button class="btn btn--primary btn--start" id="btn-start" type="button">Start shift</button>
+    <p class="best" id="best-line"></p>
+
+    <footer class="powered">a mini game about reviewing AI agents<span data-promo> · <strong>Atuin Shell Guard</strong></span></footer>
+  </section>
+
+  <!-- ───────────── Game ───────────── -->
+  <section class="screen screen--game" id="screen-game" aria-label="Review queue">
+    <header class="hud">
+      <div class="hud__lives" id="hud-lives" aria-label="Lives"></div>
+      <div class="hud__clock">
+        <span class="hud__time" id="hud-time">09:00</span>
+        <span class="hud__phase" id="hud-phase">training</span>
+      </div>
+      <div class="hud__score">
+        <span class="hud__points" id="hud-score">0</span>
+        <span class="hud__combo" id="hud-combo" hidden>×1</span>
+      </div>
+      <button class="hud__mute" id="btn-mute" type="button" aria-label="Toggle sound">🔊</button>
+    </header>
+
+    <div class="pressure" id="pressure">
+      <span class="pressure__label"><b id="pressure-count">0</b> waiting</span>
+      <div class="pressure__bar"><i id="pressure-fill"></i></div>
+    </div>
+
+    <div class="table" id="table">
+      <div class="stack" id="stack"></div>
+      <div class="swipe-hint" aria-hidden="true"><span>👆</span></div>
+      <div class="coach" id="coach" hidden></div>
+      <div class="wave" id="wave" hidden aria-live="assertive">
+        <p class="wave__kicker" id="wave-kicker">TRAINING'S OVER</p>
+        <p class="wave__title">INCOMING</p>
+        <p class="wave__sub" id="wave-sub"></p>
+      </div>
+    </div>
+
+    <footer class="actions">
+      <button class="act act--deny" id="btn-deny" type="button" aria-label="Deny">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+      <div class="mode" id="mode-badge" aria-live="polite">
+        <span class="mode__icon">👀</span>
+        <span class="mode__text"><b>MANUAL REVIEW</b><small>read every command</small></span>
+      </div>
+      <button class="act act--allow" id="btn-allow" type="button" aria-label="Allow">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+      </button>
+    </footer>
+  </section>
+
+  <!-- ───────────── Game over ───────────── -->
+  <section class="screen screen--over" id="screen-over" aria-labelledby="over-title">
+    <div class="over__scroll">
+      <p class="over__kicker" id="over-kicker">SHIFT OVER</p>
+      <h2 class="over__title" id="over-title">Production is gone.</h2>
+
+      <div class="over__score">
+        <span class="over__points" id="over-score">0</span>
+        <span class="over__rank" id="over-rank"></span>
+      </div>
+
+      <div class="compare" id="over-compare" hidden></div>
+
+      <dl class="stats" id="over-stats"></dl>
+
+      <section class="missed" id="over-missed" hidden>
+        <h3 class="missed__title">What you couldn't see</h3>
+        <ol class="missed__list" id="over-missed-list"></ol>
+      </section>
+
+      <div class="grid" id="over-grid" aria-label="Decision history"></div>
+
+      <div class="pitch" id="over-pitch"></div>
+
+      <div class="over__actions">
+        <button class="btn btn--primary btn--guard" id="btn-guarded" type="button" data-promo>🛡️ Replay this shift with dry-run</button>
+        <button class="btn btn--share" id="btn-share" type="button">📤 Challenge a friend</button>
+        <button class="btn btn--primary" id="btn-retry" type="button">🔁 Run it back</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Challenge sheet: both ways to send a result, side by side. -->
+  <div class="sheet" id="share-sheet" role="dialog" aria-modal="true" aria-labelledby="share-title" hidden>
+    <div class="sheet__panel">
+      <header class="sheet__head">
+        <h2 id="share-title">Challenge a friend</h2>
+        <button class="sheet__close" id="share-close" type="button" aria-label="Close">✕</button>
+      </header>
+      <section class="sheet__part" id="share-card-part">
+        <h3>Result card · with a QR to your challenge</h3>
+        <img class="sheet__card" id="share-card" alt="Your result card, with a QR code that opens your challenge">
+        <div class="sheet__row">
+          <button class="btn btn--small btn--soft" id="share-image" type="button">📤 Share image</button>
+          <a class="btn btn--small btn--soft" id="save-image" download>⬇️ Save image</a>
+        </div>
+        <p class="sheet__hint">On a phone, you can also press and hold the image to save it.</p>
+      </section>
+      <section class="sheet__part">
+        <h3>Post text · with your challenge link</h3>
+        <textarea class="sheet__text" id="share-text" rows="6" readonly></textarea>
+        <button class="btn btn--small btn--share" id="copy-text" type="button">📋 Copy text &amp; link</button>
+      </section>
+    </div>
+  </div>
+
+  <div class="flash" id="flash" aria-hidden="true"></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+</main>
+
+<!-- Desktop only: the game lives in a phone frame; this panel teaches the mouse swipe. -->
+<aside class="desk" aria-hidden="true">
+  <p class="desk__logo">ALLOW<span>?</span><small>OVERFLOW</small></p>
+  <div class="desk__demo">
+    <span class="desk__card">rm -rf ~/</span>
+    <span class="desk__cursor">🖱️</span>
+  </div>
+  <p class="desk__how"><b>Grab a card and fling it.</b><br><span class="desk__deny">← deny</span> · <span class="desk__allow">allow →</span></p>
+  <p class="desk__keys">Arrow keys work too, but swiping is the point.</p>
+  <p class="desk__phone">📱 Best on your phone</p>
+  <!-- Generated from js/config.js SITE_URL by tools/qr.mjs. Lazy: phones never show this panel. -->
+  <img class="desk__qr" src="qr.svg" alt="" width="132" height="132" loading="lazy">
+</aside>
+
+<!-- One permission request = one card. -->
+<template id="tpl-card">
+  <article class="card">
+    <header class="card__head">
+      <span class="card__avatar"></span>
+      <span class="card__who">
+        <b class="card__name"></b>
+        <small class="card__role"></small>
+      </span>
+      <span class="fuse" aria-label="Patience">
+        <svg viewBox="0 0 36 36"><circle class="fuse__track" cx="18" cy="18" r="15.5"/><circle class="fuse__ring" cx="18" cy="18" r="15.5"/></svg>
+        <b class="fuse__sec"></b>
+      </span>
+    </header>
+    <div class="card__body">
+      <p class="card__intent"></p>
+      <p class="card__scope"></p>
+      <div class="card__dry" hidden></div>
+      <pre class="card__cmd"></pre>
+      <div class="card__ctx"></div>
+      <section class="card__disk"></section>
+      <p class="card__quip"></p>
+    </div>
+    <span class="stamp stamp--allow">ALLOW</span>
+    <span class="stamp stamp--deny">DENY</span>
+  </article>
+</template>
+
+<!-- Engines without ES modules never run main.js; say so instead of loading forever. -->
+<script nomodule>
+  document.getElementById('boot').setAttribute('data-state', 'failed');
+  document.getElementById('boot-text').textContent = 'This browser is too old for the game. Try opening the link in Chrome or Safari.';
+</script>
+</body>
+</html>
